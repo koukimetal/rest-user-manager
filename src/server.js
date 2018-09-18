@@ -15,6 +15,7 @@ const preRegisterUser = async (req, res, next) => {
         res.json({'message': 'success', verifyId});
     } catch (e) {
         console.error(e);
+        res.status(400);
         res.json({'message': 'failed', 'error': e.toString()});
     }
 };
@@ -26,6 +27,7 @@ const verifyUser = async (req, res, next) => {
         res.json({'message': 'success'});
     } catch (e) {
         console.error(e);
+        res.status(400);
         res.json({'message': 'failed', 'error': e.toString()});
     }
 };

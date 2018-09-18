@@ -1,3 +1,5 @@
+"use strict";
+
 require('dotenv').config();
 const {DB_NAME, VI_LENGTH, VALID_DURATION_MIN, COLLECTION_NAME} = process.env;
 const crypto = require('crypto');
@@ -25,8 +27,9 @@ class UserManager {
     }
 
     async removeExpired() {
-        // todo
-        // this.collection
+        const result = await this.collection.remove(
+            {status: UNVERIFIED_STATUS, validTime: {$lt: moment().toDate()}},
+        );
     }
 
     async preRegisterUser(user, password) {
@@ -69,28 +72,74 @@ class UserManager {
             { $set: { status : VERIFIED_STATUS } }
         );
     };
+
+    async changeUser(currentUser, newUser, password) {
+        await this.removeExpired();
+        const doc = await this.collection.findOne({currentUser});
+        if (!doc) {
+            throw new Error('user: ' + currentUser + " doesn't exist");
+        }
+        const secret = getSecret(currentUser, password);
+        if (doc.secret !== secret) {
+            throw new Error('incorrect password');
+        }
+
+        await this.collection.remove(
+            {user: currentUser, secret},
+        );
+
+        await this.collection.insertOne(
+            { user: newUser, secret: getSecret(newUser, password) }
+        );
+    }
+
+    async changePassword(user, currentPassword, newPassword) {
+        await this.removeExpired();
+        const doc = await this.collection.findOne({user});
+        if (!doc) {
+            throw new Error('user: ' + user + " doesn't exist");
+        }
+        const secret = getSecret(user, currentPassword);
+        if (doc.secret !== secret) {
+            throw new Error('incorrect password');
+        }
+
+        await this.collection.remove(
+            {user: user, secret},
+        );
+
+        await this.collection.updateOne(
+            { user },
+            { $set: { secret : getSecret(user, newPassword) } }
+        );
+    }
+
+    async removeUser(user, password) {
+        await this.removeExpired();
+        const doc = await this.collection.findOne({user});
+        if (!doc) {
+            throw new Error('user: ' + user + " doesn't exist");
+        }
+        const secret = getSecret(user, password);
+        if (doc.secret !== secret) {
+            throw new Error('incorrect password');
+        }
+        await this.collection.remove(
+            {user, secret},
+        );
+    }
+
+    async registerUser(user, password) {
+        await this.removeExpired();
+        const doc = await this.collection.findOne({user});
+        if (doc) {
+            throw new Error('user: ' + user + ' already exists');
+        }
+        const secret = getSecret(user, password);
+        await this.collection.insertOne(
+            { user, secret, status : VERIFIED_STATUS }
+        );
+    }
 }
 
-
 module.exports = UserManager;
-
-
-
-
-
-
-const changeId = (id, password, newId) => {
-
-};
-
-const changePassword = (id, password, newPassword) => {
-
-};
-
-const removeId = (id, password) => {
-
-};
-
-const registerWithoutVerification = (id, password) => {
-
-};
