@@ -32,9 +32,74 @@ const verifyUser = async (req, res, next) => {
     }
 };
 
+const changeUser = async (req, res, next) => {
+    const {user, password, newUser} = req.body;
+    try {
+        await back.changeUser(user, newUser, password);
+        res.json({'message': 'success'});
+    } catch (e) {
+        console.error(e);
+        res.status(400);
+        res.json({'message': 'failed', 'error': e.toString()});
+    }
+};
+
+const changePassword = async (req, res, next) => {
+    const {user, password, newPassword} = req.body;
+    try {
+        await back.changePassword(user, password, newPassword);
+        res.json({'message': 'success'});
+    } catch (e) {
+        console.error(e);
+        res.status(400);
+        res.json({'message': 'failed', 'error': e.toString()});
+    }
+};
+
+const removeUser = async (req, res, next) => {
+    const {user, password} = req.body;
+    try {
+        await back.removeUser(user, password);
+        res.json({'message': 'success'});
+    } catch (e) {
+        console.error(e);
+        res.status(400);
+        res.json({'message': 'failed', 'error': e.toString()});
+    }
+};
+
+const registerUser = async (req, res, next) => {
+    const {user, password} = req.body;
+    try {
+        await back.registerUser(user, password);
+        res.json({'message': 'success'});
+    } catch (e) {
+        console.error(e);
+        res.status(400);
+        res.json({'message': 'failed', 'error': e.toString()});
+    }
+};
+
+const getUserInfo = async (req, res, next) => {
+    const {user, password} = req.body;
+    try {
+        const info = await back.getUserInfo(user, password);
+        res.json({'message': 'success', info});
+    } catch (e) {
+        console.error(e);
+        res.status(400);
+        res.json({'message': 'failed', 'error': e.toString()});
+    }
+};
+
 const server = restify.createServer();
 server.post('/preRegisterUser', preRegisterUser);
 server.post('/verifyUser', verifyUser);
+server.post('/changeUser', changeUser);
+server.post('/changePassword', changePassword);
+server.post('/removeUser', removeUser);
+server.post('/registerUser', registerUser);
+server.post('/getUserInfo', getUserInfo);
 
 server.use(restify.plugins.bodyParser({
     mapParams: true

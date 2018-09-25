@@ -140,6 +140,28 @@ class UserManager {
             { user, secret, status : VERIFIED_STATUS }
         );
     }
+
+    async getUserInfo(user, pass = null) {
+        await this.removeExpired();
+        const doc = await this.collection.findOne({user});
+
+        if (!doc) {
+            return null;
+        }
+
+        const keys = ['user', 'status'];
+        const res = keys.reduce((acc, key) => {
+            acc[key] = doc[key];
+            return acc;
+        }, {});
+
+        if (pass) {
+            const secret = getSecret(user, pass);
+            res['secretCorrespond'] = secret === doc.secret;
+        }
+
+        return res;
+    }
 }
 
 module.exports = UserManager;
