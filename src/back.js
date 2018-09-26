@@ -27,7 +27,7 @@ class UserManager {
     }
 
     async removeExpired() {
-        const result = await this.collection.remove(
+        const result = await this.collection.deleteMany(
             {status: UNVERIFIED_STATUS, validTime: {$lt: moment().toDate()}},
         );
     }
@@ -73,23 +73,25 @@ class UserManager {
         );
     };
 
-    async changeUser(currentUser, newUser, password) {
+    async changeUser(user, newUser, password) {
         await this.removeExpired();
-        const doc = await this.collection.findOne({currentUser});
+        const doc = await this.collection.findOne({user});
         if (!doc) {
-            throw new Error('user: ' + currentUser + " doesn't exist");
+            throw new Error('user: ' + user + " doesn't exist");
         }
-        const secret = getSecret(currentUser, password);
+        const docNew = await this.collection.findOne({user: newUser});
+        if (docNew) {
+            throw new Error('user: ' + newUser + " already exists");
+        }
+
+        const secret = getSecret(user, password);
         if (doc.secret !== secret) {
             throw new Error('incorrect password');
         }
 
-        await this.collection.remove(
-            {user: currentUser, secret},
-        );
-
-        await this.collection.insertOne(
-            { user: newUser, secret: getSecret(newUser, password) }
+        await this.collection.updateOne(
+            { user },
+            { $set: { user: newUser, secret : getSecret(newUser, password) } }
         );
     }
 
@@ -103,10 +105,6 @@ class UserManager {
         if (doc.secret !== secret) {
             throw new Error('incorrect password');
         }
-
-        await this.collection.remove(
-            {user: user, secret},
-        );
 
         await this.collection.updateOne(
             { user },
@@ -124,7 +122,7 @@ class UserManager {
         if (doc.secret !== secret) {
             throw new Error('incorrect password');
         }
-        await this.collection.remove(
+        await this.collection.deleteOne(
             {user, secret},
         );
     }
